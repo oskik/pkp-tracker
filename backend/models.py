@@ -6,7 +6,7 @@ class TrainTrip(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     start_station: str
     end_station: str
-    travel_date: Optional[date] = None
+    travel_date: Optional[str] = None
     train_type: Optional[str] = None  # example IC or EIP
     rating: Optional[int] = Field(default=None, ge=1, le=5) # Grade 1-5
 
