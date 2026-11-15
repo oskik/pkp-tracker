@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKP Tracker - Dziennik Podróży</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="max-w-4xl mx-auto py-10 px-4">
+        <!-- Header -->
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-indigo-900">Moje Podróże Kolejowe</h1>
+            <p class="text-gray-500 mt-2">Zapisuj i zarządzaj swoimi trasami PKP</p>
+        </header>
+
+        <!-- Adding form-->
+        <section class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-10">
+            <h2 class="text-xl font-semibold mb-6 text-gray-800">Dodaj nową podróż</h2>
+            <form id="tripForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Stacja początkowa</label>
+                    <input type="text" id="start_station" required placeholder="np. Warszawa Centralna"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Stacja docelowa</label>
+                    <input type="text" id="end_station" required placeholder="np. Kraków Główny"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Data przejazdu</label>
+                    <input type="date" id="travel_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Typ pociągu</label>
+                    <select id="train_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                        <option value="EIP">EIP (Pendolino)</option>
+                        <option value="EIC">EIC</option>
+                        <option value="IC">IC</option>
+                        <option value="TLK">TLK</option>
+                        <option value="REGIO">REGIO</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Ocena (1-5)</label>
+                    <input type="number" id="rating" min="1" max="5" value="5"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" 
+                        class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 transition duration-200">
+                        Dodaj podróż
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Journey list -->
+        <section>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Twoje Relacje</h2>
+                <span id="tripCount" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">0 podróży</span>
+            </div>
+            
+            <div id="tripList" class="grid grid-cols-1 gap-4">
+                <!-- Tu JS wstrzyknie kafelki -->
+                <p class="text-center text-gray-400 py-10">Ładowanie podróży...</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/trips';
+
+        // 1. Downloading the trip
+        async function fetchTrips() {
+            try {
+                const response = await fetch(API_URL);
+                const trips = await response.json();
+                renderTrips(trips);
+            } catch (error) {
+                console.error('Błąd pobierania:', error);
+                document.getElementById('tripList').innerHTML = '<p class="text-red-500">Nie udało się połączyć z API.</p>';
+            }
+        }
+
+        // 2. Renedering the list on the screen
+        function renderTrips(trips) {
+            const container = document.getElementById('tripList');
+            const countSpan = document.getElementById('tripCount');
+            countSpan.innerText = `${trips.length} podróży`;
+
+            if (trips.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-10">Brak zapisanych podróży. Dodaj pierwszą!</p>';
+                return;
+            }
+
+            container.innerHTML = trips.map(trip => `
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded uppercase">${trip.train_type || 'PKP'}</span>
+                            <span class="text-gray-400 text-sm">${trip.travel_date || 'Brak daty'}</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            ${trip.start_station} → ${trip.end_station}
+                        </h3>
+                        <div class="flex text-yellow-400 mt-1">
+                            ${'★'.repeat(trip.rating || 0)}${'☆'.repeat(5 - (trip.rating || 0))}
+                        </div>
+                    </div>
+                    <button onclick="deleteTrip(${trip.id})" class="text-red-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 3. Adding new trip
+        document.getElementById('tripForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newTrip = {
+                start_station: document.getElementById('start_station').value,
+                end_station: document.getElementById('end_station').value,
+                travel_date: document.getElementById('travel_date').value,
+                train_type: document.getElementById('train_type').value,
+                rating: parseInt(document.getElementById('rating').value)
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTrip)
+                });
+
+                if (response.ok) {
+                    document.getElementById('tripForm').reset();
+                    fetchTrips(); // Odśwież listę
+                }
+            } catch (error) {
+                alert('Błąd podczas dodawania podróży');
+            }
+        });
+
+        // 4. Deleting the trip
+        async function deleteTrip(id) {
+            if (!confirm('Czy na pewno chcesz usunąć tę podróż?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    fetchTrips();
+                }
+            } catch (error) {
+                alert('Błąd podczas usuwania');
+            }
+        }
+
+        // Init
+        fetchTrips();
+    </script>
+</body>
+</html>
