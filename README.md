@@ -47,8 +47,9 @@ PKP Tracker pozwala użytkownikowi prowadzić cyfrowy dziennik przejazdów kolej
    * `conda activate pkp-tracker`
 2. Zainstaluj wymagane biblioteki:
    * `pip install fastapi uvicorn sqlmodel`
-3. Uruchom serwer deweloperski FastAPI (z głównego katalogu projektu):
-   * `uvicorn backend.main:app --reload`
+3. Wejdź do podfolderu backend: `cd backend`
+4. Uruchom serwer deweloperski FastAPI (z podfolderu backend):
+   * `uvicorn main:app --reload`
    * Serwer API uruchomi się pod adresem `http://localhost:8000` (dokumentacja Swagger UI: `http://localhost:8000/docs`).
 
 ### Krok 3: Uruchomienie Frontendu
